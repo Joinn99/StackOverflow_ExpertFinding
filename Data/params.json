@@ -30,10 +30,10 @@
         "opti": {
             "alpha": {
                 "scale": "linear",
-                "range": [
-                    0.9,
-                    1.0
-                ],
+                "range": {
+                    "low": 0.9,
+                    "high": 1.0
+                },
                 "dtype": "float"
             }
         }
@@ -48,18 +48,18 @@
         "opti": {
             "n_estimators": {
                 "scale": "linear",
-                "range": [
-                    100,
-                    180
-                ],
+                "range": {
+                    "low": 100,
+                    "high": 180
+                },
                 "dtype": "int"
             },
             "max_depth": {
                 "scale": "linear",
-                "range": [
-                    12,
-                    20
-                ],
+                "range": {
+                    "low": 12,
+                    "high": 20
+                },
                 "dtype": "int"
             }
         }
@@ -76,34 +76,34 @@
         "opti": {
             "n_estimators": {
                 "scale": "linear",
-                "range": [
-                    40,
-                    100
-                ],
+                "range": {
+                    "low": 40,
+                    "high": 100
+                },
                 "dtype": "int"
             },
             "gamma": {
                 "scale": "linear",
-                "range": [
-                    1e-1,
-                    5e-1
-                ],
+                "range": {
+                    "low": 1e-1,
+                    "high": 5e-1
+                },
                 "dtype": "float"
             },
             "eta": {
                 "scale": "linear",
-                "range": [
-                    0.075,
-                    0.4
-                ],
+                "range": {
+                    "low": 0.075,
+                    "high": 0.4
+                },
                 "dtype": "float"
             },
             "reg_lambda": {
                 "scale": "linear",
-                "range": [
-                    40.0,
-                    80.0
-                ],
+                "range": {
+                    "low": 40.0,
+                    "high": 80.0
+                },
                 "dtype": "float"
             }
         }
@@ -115,26 +115,26 @@
         "opti": {
             "sampling_strategy": {
                 "scale": "linear",
-                "range": [
-                    1.25,
-                    2.5
-                ],
+                "range": {
+                    "low": 1.25,
+                    "high": 2.5
+                },
                 "dtype": "float"
             }
         }
     },
     "ADASYN": {
         "best": {
-            "sampling_strategy": 2.5,
+            "sampling_strategy": 2.0,
             "n_neighbors": 2
         },
         "opti": {
             "sampling_strategy": {
                 "scale": "linear",
-                "range": [
-                    1.5,
-                    4
-                ],
+                "range": {
+                    "low": 1.5,
+                    "high": 3.0
+                },
                 "dtype": "float"
             }
         }

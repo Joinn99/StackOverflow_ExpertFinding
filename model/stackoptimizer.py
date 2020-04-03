@@ -111,12 +111,12 @@ class StackExpOptimizer():
             return grid_par['list']
         sc_par = {}
         [sc_par['start'], sc_par['stop']] = np.sort(
-            np.random.uniform(grid_par['range'], size=2))
+            np.random.uniform(**grid_par['range'], size=2))
         if grid_par['scale'] == 'linear':
             grid = np.unique(np.linspace(
-                num=5, dtype=grid_par['dtype'], **sc_par))
+                num=3, dtype=grid_par['dtype'], **sc_par))
         else:
-            grid = np.geomspace(num=5, dtype=grid_par['dtype'], **sc_par)
+            grid = np.geomspace(num=3, dtype=grid_par['dtype'], **sc_par)
         return grid
 
     def _rec(self, clf_name, samp_name, res):

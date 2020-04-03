@@ -1,9 +1,10 @@
 # StackOverflow Expert Finding
 
 ## Run
-1. Clone this repository using `git clone https://github.com/Joinn99/StackOverflow_ExpertFinding`
-2. run **setup.sh**
-3. run main.py <kbd>Ctrl</kbd>+<kbd>C</kbd> to exit
+1. Clone this repository using `git clone https://github.com/Joinn99/StackOverflow_ExpertFinding`.
+2. run **setup.sh** to download data.
+3. extract database to Data/. Example:`7za x Data/StackExpert.7z -oData`
+4. run main.py <kbd>Ctrl</kbd>+<kbd>C</kbd> to exit.
 
 ## Requirements
 These packages are required.
