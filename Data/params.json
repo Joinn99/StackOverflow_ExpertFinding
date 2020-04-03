@@ -132,7 +132,7 @@
             "sampling_strategy": {
                 "scale": "linear",
                 "range": [
-                    1.25,
+                    1.5,
                     4
                 ],
                 "dtype": "float"

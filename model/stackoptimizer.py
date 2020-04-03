@@ -165,7 +165,8 @@ class StackExpOptimizer():
                               clf[seed % len(clf)](), tag[seed % len(tag)])
                 for sec in range(5):
                     tqdm.write(
-                        "\r\b[INFO] Next will start in {:d} seconds...".format(5-sec), end="")
+                        "\r\b[INFO] Next will start in {:d} seconds... 'Ctrl+C' to exit.".format(
+                            5-sec), end="")
                     sleep(1)
                 tqdm.write("")
         except KeyboardInterrupt:
