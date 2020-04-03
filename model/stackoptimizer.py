@@ -114,9 +114,9 @@ class StackExpOptimizer():
             np.random.uniform(**grid_par['range'], size=2))
         if grid_par['scale'] == 'linear':
             grid = np.unique(np.linspace(
-                num=3, dtype=grid_par['dtype'], **sc_par))
+                num=7, dtype=grid_par['dtype'], **sc_par))
         else:
-            grid = np.geomspace(num=3, dtype=grid_par['dtype'], **sc_par)
+            grid = np.geomspace(num=7, dtype=grid_par['dtype'], **sc_par)
         return grid
 
     def _rec(self, clf_name, samp_name, res):
