@@ -160,9 +160,10 @@ class StackExpOptimizer():
         clf = [SVC, RidgeClassifier, ExtraTreesClassifier, XGBClassifier]
         try:
             while True:
-                seed = int(time())
+                np.random.seed(int(time()))
                 self.optimize(ADASYN(n_jobs=-1),
-                              clf[seed % len(clf)](), tag[seed % len(tag)])
+                              clf[int(np.random.randint(len(clf)))](),
+                              tag[int(np.random.randint(len(tag)))])
                 for sec in range(5):
                     tqdm.write(
                         "\r\b[INFO] Next will start in {:d} seconds... 'Ctrl+C' to exit.".format(

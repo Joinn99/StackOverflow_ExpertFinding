@@ -125,7 +125,7 @@
     },
     "ADASYN": {
         "best": {
-            "sampling_strategy": 2.0,
+            "sampling_strategy": 1.5,
             "n_neighbors": 2
         },
         "opti": {
@@ -133,7 +133,7 @@
                 "scale": "linear",
                 "range": {
                     "low": 1.5,
-                    "high": 3.0
+                    "high": 2.1
                 },
                 "dtype": "float"
             }
