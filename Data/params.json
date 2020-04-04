@@ -34,6 +34,7 @@
                     "low": 0.9,
                     "high": 1.0
                 },
+                "step": 0.075,
                 "dtype": "float"
             }
         }
@@ -52,6 +53,7 @@
                     "low": 100,
                     "high": 180
                 },
+                "step": 40,
                 "dtype": "int"
             },
             "max_depth": {
@@ -60,6 +62,7 @@
                     "low": 12,
                     "high": 20
                 },
+                "step": 4,
                 "dtype": "int"
             }
         }
@@ -80,6 +83,7 @@
                     "low": 40,
                     "high": 100
                 },
+                "step": 30,
                 "dtype": "int"
             },
             "gamma": {
@@ -88,6 +92,7 @@
                     "low": 1e-1,
                     "high": 5e-1
                 },
+                "step": 2e-1,
                 "dtype": "float"
             },
             "eta": {
@@ -96,6 +101,7 @@
                     "low": 0.075,
                     "high": 0.4
                 },
+                "step": 0.15,
                 "dtype": "float"
             },
             "reg_lambda": {
@@ -104,6 +110,7 @@
                     "low": 40.0,
                     "high": 80.0
                 },
+                "step": 20.0,
                 "dtype": "float"
             }
         }
@@ -119,22 +126,24 @@
                     "low": 1.25,
                     "high": 2.5
                 },
+                "step": 0.2,
                 "dtype": "float"
             }
         }
     },
     "ADASYN": {
         "best": {
-            "sampling_strategy": 1.5,
+            "sampling_strategy": 1.3,
             "n_neighbors": 2
         },
         "opti": {
             "sampling_strategy": {
                 "scale": "linear",
                 "range": {
-                    "low": 1.5,
-                    "high": 2.1
+                    "low": 1.25,
+                    "high": 2.5
                 },
+                "step": 0.9,
                 "dtype": "float"
             }
         }
