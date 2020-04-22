@@ -31,6 +31,12 @@ def pre_proc(data):
     del data['id']
     data.update(np.log10(data.filter(regex=r'A_SCORE$', axis=1).where(
         data.filter(regex=r'A_SCORE$', axis=1) >= 0, 0)+1))
+    data = data.drop(data.filter(regex=r'_GAP$', axis=1), axis=1)
+    data = data.drop(data.filter(regex=r'_ANS$', axis=1), axis=1)
+    data = data.drop(data.filter(regex=r'_RANK$', axis=1), axis=1)
+    # data = data.drop(data.filter(regex=r'_ENTRO$', axis=1), axis=1)
+    # data = data.drop(data.filter(regex=r'_CNT$', axis=1), axis=1)
+    # data = data.drop(data.filter(regex=r'_LEN$', axis=1), axis=1)
     return data.fillna(0.0)
 
 
@@ -41,17 +47,19 @@ def load(tag, path):
     # Connect database and execute query.
     conn = sqlite3.connect('{}/StackExpert.db'.format(path))
     data = pd.read_sql_query("""
-        SELECT * FROM {:s} WHERE CNT_A>2
+        SELECT * FROM {:s}
     """.format(tag), conn)
     conn.close()
     data = pre_proc(data)
     # Binarize target and normarlize data features
     target = column_or_1d(binarize(pd.DataFrame(data.pop('EXPERT_SCORE')),
                                    threshold=99, copy=False)).astype(int)
+    col = data.columns
     data = quantile_transform(data, copy=False, output_distribution='normal')
+    data = pd.DataFrame(maxabs_scale(data), columns=col)
     # Calculate expert/non-expert ratio.
     cnt = np.bincount(target)
-    return maxabs_scale(data), target, np.divide(np.min(cnt), np.max(cnt))
+    return data, target, np.divide(np.min(cnt), np.max(cnt))
 
 
 class StackExpOptimizer():
@@ -117,9 +125,9 @@ class StackExpOptimizer():
                 break
         if grid_par['scale'] == 'linear':
             grid = np.unique(np.linspace(
-                num=9, dtype=grid_par['dtype'], **sc_par))
+                num=7, dtype=grid_par['dtype'], **sc_par))
         else:
-            grid = np.geomspace(num=9, dtype=grid_par['dtype'], **sc_par)
+            grid = np.geomspace(num=7, dtype=grid_par['dtype'], **sc_par)
         return grid
 
     def _rec(self, clf_name, samp_name, res):
@@ -165,8 +173,8 @@ class StackExpOptimizer():
             while True:
                 np.random.seed(int(time()))
                 self.optimize(ADASYN(n_jobs=-1),
-                              clf[int(np.random.randint(len(clf)))](),
-                              tag[int(np.random.randint(len(tag)))])
+                              clf[3](),  # clf[int(np.random.randint(len(clf)))](),
+                              tag[9])  # tag[int(np.random.randint(len(tag)))])
                 for sec in range(5):
                     tqdm.write(
                         "\r\b[INFO] Next will start in {:d} seconds... 'Ctrl+C' to exit.".format(
@@ -222,11 +230,15 @@ class StackExpOptimizer():
             tqdm.write("[EP{:d}] Search Grid: {:}\t{:s}".format(
                 ind, str(value) + " Fitting...", cur()))
             # Fit the model.
-            grid_opti.fit(data, target)
+            grid_opti.fit(data.to_numpy(), target)
             # Find the best score and paramaters.
             df_res = pd.DataFrame(grid_opti.cv_results_)
             df_res = df_res.loc[df_res['mean_test_{:s}'.format(
                 self.scoring)].idxmax()]
+            if self.params['GridSearchCV']['refit']:
+                tqdm.write("\n".join(["{}: {}".format(k, v) for (k, v) in zip(
+                    data.columns, list(grid_opti.best_estimator_[
+                        type(clf).__name__].feature_importances_))]))
             tqdm.write("[EP{:d}] Fit complete. Current Score: {:}\t{:s}".format(
                 ind, df_res['mean_test_{:s}'.format(self.scoring)], cur()))
             tqdm.write("\r[EP{:d}] Best: {:}\t{:s}".format(
@@ -245,5 +257,6 @@ class StackExpOptimizer():
 
 
 if __name__ == "__main__":
-    SEO = StackExpOptimizer(path='Data/4_Features')
-    SEO.random_process()
+    SO = StackExpOptimizer("Data")
+    SO.random_process()
+

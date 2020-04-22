@@ -9,69 +9,11 @@
         ],
         "verbose": 0
     },
-    "SVC": {
-        "best": {
-            "tol": 1e-5,
-            "C": 1.0,
-            "kernel": "rbf"
-        },
-        "opti": {
-            "kernel":{
-                "dtype": "list",
-                "list": ["linear", "rbf", "poly"]
-            }
-        }
-    },
-    "RidgeClassifier": {
-        "best": {
-            "tol": 1e-10,
-            "alpha": 0.95
-        },
-        "opti": {
-            "alpha": {
-                "scale": "linear",
-                "range": {
-                    "low": 0.9,
-                    "high": 1.0
-                },
-                "step": 0.075,
-                "dtype": "float"
-            }
-        }
-    },
-    "ExtraTreesClassifier": {
-        "best": {
-            "n_estimators": 140,
-            "max_depth": 16,
-            "verbose": 0,
-            "n_jobs": -1
-        },
-        "opti": {
-            "n_estimators": {
-                "scale": "linear",
-                "range": {
-                    "low": 100,
-                    "high": 180
-                },
-                "step": 40,
-                "dtype": "int"
-            },
-            "max_depth": {
-                "scale": "linear",
-                "range": {
-                    "low": 12,
-                    "high": 20
-                },
-                "step": 4,
-                "dtype": "int"
-            }
-        }
-    },
     "XGBClassifier": {
         "best": {
             "n_estimators": 60,
-            "gamma": 3e-1,
-            "eta": 0.25,
+            "gamma": 2e-1,
+            "eta": 0.125,
             "reg_lambda": 50.0,
             "verbosity": 0,
             "n_jobs": -1

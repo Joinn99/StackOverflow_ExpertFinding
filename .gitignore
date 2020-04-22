@@ -1,3 +1,4 @@
 Data/*.db
 Data/*.7z
 __pycache__/
+Test/
