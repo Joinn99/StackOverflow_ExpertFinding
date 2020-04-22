@@ -173,7 +173,7 @@ class StackExpOptimizer():
             while True:
                 np.random.seed(int(time()))
                 self.optimize(ADASYN(n_jobs=-1),
-                              clf[int(np.random.randint(len(clf)))](),
+                              clf[3](),  # clf[int(np.random.randint(len(clf)))](),
                               tag[int(np.random.randint(len(tag)))])
                 for sec in range(5):
                     tqdm.write(
@@ -259,3 +259,4 @@ class StackExpOptimizer():
 if __name__ == "__main__":
     SO = StackExpOptimizer("Data")
     SO.random_process()
+
