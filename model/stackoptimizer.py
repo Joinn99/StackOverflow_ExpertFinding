@@ -28,24 +28,26 @@ def pre_proc(data):
     """
     Preprocess input data.
     """
-    del data['id']
+    # del data['id']
     data.update(np.log10(data.filter(regex=r'A_SCORE$', axis=1).where(
         data.filter(regex=r'A_SCORE$', axis=1) >= 0, 0)+1))
     data = data.drop(data.filter(regex=r'_GAP$', axis=1), axis=1)
     data = data.drop(data.filter(regex=r'_ANS$', axis=1), axis=1)
     data = data.drop(data.filter(regex=r'_RANK$', axis=1), axis=1)
+    # data = data.drop(data.filter(regex=r'_SPAN$', axis=1), axis=1)
     # data = data.drop(data.filter(regex=r'_ENTRO$', axis=1), axis=1)
     # data = data.drop(data.filter(regex=r'_CNT$', axis=1), axis=1)
     # data = data.drop(data.filter(regex=r'_LEN$', axis=1), axis=1)
+
     return data.fillna(0.0)
 
 
-def load(tag, path):
+def load(tag, period):
     """
     Load data from database.
     """
     # Connect database and execute query.
-    conn = sqlite3.connect('{}/StackExpert.db'.format(path))
+    conn = sqlite3.connect('{:s}/StackExpert{:d}.db'.format("Data", period))
     data = pd.read_sql_query("""
         SELECT * FROM {:s}
     """.format(tag), conn)
@@ -63,11 +65,11 @@ def load(tag, path):
 
 
 class StackExpOptimizer():
-    def __init__(self, path, scoring='f1'):
-        self.path = path
+    def __init__(self, path, scoring='f1', period=60):
         self.scoring = scoring
-        self.info = sqlite3.connect('{:s}/info.db'.format(path))
-        with open('{:s}/params.json'.format(self.path), 'r') as par_file:
+        self.period = period
+        self.info = sqlite3.connect('{:s}/info.db'.format("Data"))
+        with open('{:s}/params.json'.format("Data"), 'r') as par_file:
             self.params = json.load(par_file)
         self.validator = RepeatedStratifiedKFold(n_splits=3, n_repeats=2)
         self.seed = int(time())
@@ -181,6 +183,7 @@ class StackExpOptimizer():
                             5-sec), end="")
                     sleep(1)
                 tqdm.write("")
+                self.info.commit()
         except KeyboardInterrupt:
             tqdm.write(
                 "\r\b[INFO] Process end. {}".format(cur()))
@@ -200,9 +203,9 @@ class StackExpOptimizer():
             """.format(**{'div': '*'*50, 'seed': self.seed, 'indent': '\b'*6, 'tag': self.tag,
                           'samp': type(samp).__name__, 'clf': type(clf).__name__}))
         # Load data.
-        data, target, ratio = load(self.tag, self.path)
-        tqdm.write("[INFO] Load complete. Expert ratio:{:.2f}%\t{:s}".format(
-            100*ratio, cur()))
+        data, target, ratio = load(self.tag, self.period)
+        tqdm.write("[INFO] {:d} day data loads complete. Expert ratio:{:.2f}%\t{:s}".format(
+            self.period, 100*ratio, cur()))
         # Set random seed.
         self.seed = int(time())
         self.validator.random_state = self.seed
@@ -259,4 +262,3 @@ class StackExpOptimizer():
 if __name__ == "__main__":
     SO = StackExpOptimizer("Data")
     SO.random_process()
-
