@@ -1,4 +1,3 @@
-Data/*.db
+Data/*.sqlite
 Data/*.7z
 __pycache__/
-Test/

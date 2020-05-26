@@ -1,28 +1,41 @@
 import os
 import sys
-import argparse
-from model import stackoptimizer
+from model.stackoptimizer import StackExpOptimizer
+from model.analysis import find_expert, best_solution, performance
+from model.utils import get_tags
 
 sys.path.append('./')
 
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-s", "--scoring", help="The scoring method.",
-        choices=['f1', 'precision', 'recall'], default='f1')
-    parser.add_argument(
-        "-p", "--period", help="The experiment period.",
-        choices=[60, 90, 120], default=60, type=int)
-    return parser
-
+INFO = """
+    \b\b\b\b{line}\n\n StackOverflow Expert Prediction\n\n{line}
+    Options:
+        [0] Exit
+        [1] Run grid search
+        [2] Find experts in one tag
+        [3] Show best parameters in specific tag
+        [4] Show model performance
+    Input(0-4):
+"""
 
 if __name__ == "__main__":
-    PARSER = parse_arguments()
-    ARGS = PARSER.parse_args()
-    if os.path.exists("Data/StackExpert{:d}.db".format(ARGS.period)):
-        SO = stackoptimizer.StackExpOptimizer(
-            "Data", scoring=ARGS.scoring, period=ARGS.period)
-        SO.random_process()
-    else:
-        print("[Error] Data not detected.")
+    TAGS = get_tags()
+    TAGS_TEXT = ["\t[{:d}] {:s}\n".format(ind, tag) for ind, tag in enumerate(TAGS)]
+    while True:
+        os.system('cls||clear')
+        OPTION = input(INFO.format(**{"line": "*" * 50}))
+        if OPTION == "1":
+            StackExpOptimizer().random_process()
+        elif OPTION == "2":
+            TAG = input("\tSelect tag:\n" + "".join(TAGS_TEXT))
+            find_expert(TAGS[int(TAG)])
+            input("Press 'Enter' to coutinue...")
+        elif OPTION == "3":
+            TAG = input("\tSelect tag:\n" + "".join(TAGS_TEXT))
+            print("{st}Best Parameters{st}".format(**{"st": "*"*15}))
+            print(best_solution(TAGS[int(TAG)]).squeeze().to_string())
+            input("Press 'Enter' to coutinue...")
+        elif OPTION == "4":
+            performance()
+            input("Press 'Enter' to coutinue...")
+        elif OPTION == "0":
+            break

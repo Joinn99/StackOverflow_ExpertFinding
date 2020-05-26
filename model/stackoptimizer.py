@@ -1,8 +1,11 @@
-# Stack Expert Experiment
+# stackoptimizer.py
+# 网格搜索法优化模型性能
+# python3.x
+
 import sqlite3
 import os
 import json
-from time import time, sleep, strftime, localtime
+from time import time, sleep
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
@@ -10,72 +13,29 @@ from xgboost import XGBClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.svm import SVC
-from sklearn.utils.validation import column_or_1d
-from sklearn.preprocessing import quantile_transform, binarize, maxabs_scale
 from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold
 from imblearn.pipeline import Pipeline
 from imblearn.over_sampling import ADASYN
+from model.utils import load_data, cur, get_tags
 
-
-def cur():
-    """
-    Return local time as random seed.
-    """
-    return strftime("(%Y-%m-%d %X)", localtime())
-
-
-def pre_proc(data):
-    """
-    Preprocess input data.
-    """
-    # del data['id']
-    data.update(np.log10(data.filter(regex=r'A_SCORE$', axis=1).where(
-        data.filter(regex=r'A_SCORE$', axis=1) >= 0, 0)+1))
-    data = data.drop(data.filter(regex=r'_GAP$', axis=1), axis=1)
-    data = data.drop(data.filter(regex=r'_ANS$', axis=1), axis=1)
-    data = data.drop(data.filter(regex=r'_RANK$', axis=1), axis=1)
-    # data = data.drop(data.filter(regex=r'_SPAN$', axis=1), axis=1)
-    # data = data.drop(data.filter(regex=r'_ENTRO$', axis=1), axis=1)
-    # data = data.drop(data.filter(regex=r'_CNT$', axis=1), axis=1)
-    # data = data.drop(data.filter(regex=r'_LEN$', axis=1), axis=1)
-
-    return data.fillna(0.0)
-
-
-def load(tag, period):
-    """
-    Load data from database.
-    """
-    # Connect database and execute query.
-    conn = sqlite3.connect('{:s}/StackExpert{:d}.db'.format("Data", period))
-    data = pd.read_sql_query("""
-        SELECT * FROM {:s}
-    """.format(tag), conn)
-    conn.close()
-    data = pre_proc(data)
-    # Binarize target and normarlize data features
-    target = column_or_1d(binarize(pd.DataFrame(data.pop('EXPERT_SCORE')),
-                                   threshold=99, copy=False)).astype(int)
-    col = data.columns
-    data = quantile_transform(data, copy=False, output_distribution='normal')
-    data = pd.DataFrame(maxabs_scale(data), columns=col)
-    # Calculate expert/non-expert ratio.
-    cnt = np.bincount(target)
-    return data, target, np.divide(np.min(cnt), np.max(cnt))
-
-
+# 模型优化器
 class StackExpOptimizer():
-    def __init__(self, path, scoring='f1', period=60):
-        self.scoring = scoring
-        self.period = period
-        self.info = sqlite3.connect('{:s}/info.db'.format("Data"))
-        with open('{:s}/params.json'.format("Data"), 'r') as par_file:
+    def __init__(self, scoring='f1'):
+        """
+        初始化
+        """
+        self.scoring = scoring      # 优化指标（默认f1-score）
+        self.info = sqlite3.connect('Data/info.sqlite')
+        with open('Data/params.json', 'r') as par_file:
             self.params = json.load(par_file)
         self.validator = RepeatedStratifiedKFold(n_splits=3, n_repeats=2)
-        self.seed = int(time())
+        self.seed = int(time())     # 随机数种子
         self.tag = ""
 
     def __del__(self):
+        """
+        析构函数
+        """
         self.info.commit()
         self.info.close()
         tqdm.write(
@@ -83,7 +43,7 @@ class StackExpOptimizer():
 
     def _get_params(self, model, dt_ratio):
         """
-        Get default parameterss for experiment model.
+        获取模型的参数
         """
         est = [i for (i, _) in model.get_params()['steps']]
         pipar = {est[1]+'__'+k: v for (k, v)
@@ -96,7 +56,7 @@ class StackExpOptimizer():
 
     def _get_grid(self, model, dt_ratio):
         """
-        Get model parameter grid for grid search.
+        获取网格搜索法所需的参数网格
         """
         est = [i for (i, _) in model.get_params()['steps']]
         grid = {est[0]+'__sampling_strategy': dt_ratio * self._gen(
@@ -107,34 +67,34 @@ class StackExpOptimizer():
 
     def _set_params(self, para):
         """
-        Set the best parameters of the model which find in grid search.
+        将参数设置为网格搜索法中寻找到的最佳参数组合
         """
         for (key, value) in para.items():
             self.params[key.split('__')[0]]['best'][key.split('__')[1]] = value
 
     def _gen(self, grid_par):
         """
-        Generate random parameter grid space.
+        随机生成符合条件的参数网格
         """
         np.random.seed(self.seed)
         if grid_par['dtype'] == 'list':
             return grid_par['list']
         sc_par = {}
-        while True:
+        while True: # 在range范围内生成一个长度大于step的子区间[start, stop]
             [sc_par['start'], sc_par['stop']] = np.sort(
                 np.random.uniform(**grid_par['range'], size=2))
             if sc_par['stop'] - sc_par['start'] >= grid_par['step']:
                 break
-        if grid_par['scale'] == 'linear':
+        if grid_par['scale'] == 'linear':   # 生成[start, stop]范围内的均匀分布
             grid = np.unique(np.linspace(
-                num=7, dtype=grid_par['dtype'], **sc_par))
+                num=9, dtype=grid_par['dtype'], **sc_par))
         else:
-            grid = np.geomspace(num=7, dtype=grid_par['dtype'], **sc_par)
+            grid = np.geomspace(num=9, dtype=grid_par['dtype'], **sc_par)
         return grid
 
     def _rec(self, clf_name, samp_name, res):
         """
-        Record experiment results.
+        将实验结果存入数据库
         """
         params = {k: v for k, v in self.params[clf_name]['best'].items(
         ) if k in self.params[clf_name]['opti'].keys()}
@@ -147,10 +107,9 @@ class StackExpOptimizer():
 
     def _check(self, clf):
         """
-        Check database. Create table if not exists.
+        检查数据库中是否存在某种分类器的实验记录，没有则创建空表
         """
-        name = self.info.execute("""SELECT name FROM `sqlite_master`
-                WHERE type='table' AND NOT name='sqlite_sequence'""").fetchall()
+        name = self.info.execute("""""").fetchall()
         if (clf, ) not in name:
             params = ['{} {}'.format(k, v['dtype'])
                       for k, v in self.params[clf]['opti'].items()]
@@ -166,18 +125,17 @@ class StackExpOptimizer():
 
     def random_process(self):
         """
-        Ramdom run the experiment.
+        重复性进行实验的主函数
         """
-        tag = ['css', 'javascript', 'java', 'python', 'c_sharp', 'php',
-               'android', 'jquery', 'c_plus', 'html']
+        tag = get_tags()
         clf = [SVC, RidgeClassifier, ExtraTreesClassifier, XGBClassifier]
         try:
             while True:
                 np.random.seed(int(time()))
                 self.optimize(ADASYN(n_jobs=-1),
-                              clf[3](),  # clf[int(np.random.randint(len(clf)))](),
+                              clf[int(np.random.randint(len(clf)))](),
                               tag[int(np.random.randint(len(tag)))])
-                for sec in range(5):
+                for sec in range(4):
                     tqdm.write(
                         "\r\b[INFO] Next will start in {:d} seconds... 'Ctrl+C' to exit.".format(
                             5-sec), end="")
@@ -190,9 +148,9 @@ class StackExpOptimizer():
 
     def optimize(self, samp, clf, tag):
         """
-        Main optimize process.
+        单次实验流程
         """
-        # Print title and information.
+        # 打印头部信息
         os.system('cls||clear')
         self.tag = tag
         tqdm.write("""{div}\n    Stack Expert Model Optimization
@@ -202,28 +160,28 @@ class StackExpOptimizer():
             {indent}--Tag: {tag}\n{div}
             """.format(**{'div': '*'*50, 'seed': self.seed, 'indent': '\b'*6, 'tag': self.tag,
                           'samp': type(samp).__name__, 'clf': type(clf).__name__}))
-        # Load data.
-        data, target, ratio = load(self.tag, self.period)
-        tqdm.write("[INFO] {:d} day data loads complete. Expert ratio:{:.2f}%\t{:s}".format(
-            self.period, 100*ratio, cur()))
-        # Set random seed.
+        # 加载数据
+        data, target, ratio = load_data(self.tag)
+        tqdm.write("[INFO] Data loads complete. Expert ratio:{:.2f}%\t{:s}".format(
+            100*ratio, cur()))
+        # 设置随机数种子
         self.seed = int(time())
         self.validator.random_state = self.seed
         self._check(type(clf).__name__)
         samp.set_params(**{"random_state": self.seed})
         if 'random_state' in clf.get_params().keys():
             clf.set_params(**{"random_state": self.seed})
-        # Construct over-sampling and classifier model.
+        # 建立过采样和分类器的流水线模型
         pipeline = Pipeline(
             [(type(samp).__name__, samp), (type(clf).__name__, clf)])
         tqdm.write(
             "[INFO] Model load completed. Start grid search...\t{:s}".format(cur()))
-        # Perform grid-search with each parameters.
+        # 开始进行网格搜索
         for ind, (key, value) in enumerate(tqdm(self._get_grid(pipeline, ratio).items())):
             tqdm.write('-'*15 + 'Epoch {:d}'.format(ind) + '-'*15)
-            # Set model default params.
+            # 设置默认参数
             pipeline.set_params(**self._get_params(pipeline, ratio))
-            # Construct grid-search object.
+            # 建立网格搜索对象
             grid_opti = GridSearchCV(estimator=pipeline,
                                      param_grid={key: value},
                                      cv=self.validator,
@@ -232,16 +190,12 @@ class StackExpOptimizer():
                 "[EP{:d}] Search Paramator: {:}\t{:s}".format(ind, key, cur()))
             tqdm.write("[EP{:d}] Search Grid: {:}\t{:s}".format(
                 ind, str(value) + " Fitting...", cur()))
-            # Fit the model.
+            # 拟合模型
             grid_opti.fit(data.to_numpy(), target)
-            # Find the best score and paramaters.
+            # 输出最佳参数及对应实验指标
             df_res = pd.DataFrame(grid_opti.cv_results_)
             df_res = df_res.loc[df_res['mean_test_{:s}'.format(
                 self.scoring)].idxmax()]
-            if self.params['GridSearchCV']['refit']:
-                tqdm.write("\n".join(["{}: {}".format(k, v) for (k, v) in zip(
-                    data.columns, list(grid_opti.best_estimator_[
-                        type(clf).__name__].feature_importances_))]))
             tqdm.write("[EP{:d}] Fit complete. Current Score: {:}\t{:s}".format(
                 ind, df_res['mean_test_{:s}'.format(self.scoring)], cur()))
             tqdm.write("\r[EP{:d}] Best: {:}\t{:s}".format(
@@ -249,11 +203,12 @@ class StackExpOptimizer():
             if '{}__sampling_strategy'.format(type(samp).__name__) in df_res['params']:
                 df_res['params']['{}__sampling_strategy'.format(
                     type(samp).__name__)] /= ratio
-            # Update parameters.
+            # 更新参数
             self._set_params(df_res['params'])
-            # Store the results.
+            # 存储实验结果
             self._rec(type(clf).__name__, type(samp).__name__,
                       df_res.filter(regex=r'^mean_test', axis=0))
+        # 完成网格搜索，一次实验结束
         tqdm.write(
             "{:s}\n[INFO] Grid search complete.{:}\t{:s}\n".format('='*50, "", cur()))
         del data, target
